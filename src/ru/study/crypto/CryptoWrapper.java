@@ -24,12 +24,20 @@ public class CryptoWrapper {
         return cipher.encrypt(isHex ? toBytes(s) : s.getBytes());
     }
 
+    public byte[] encrypt(byte[] b) {
+        return cipher.encrypt(b);
+    }
+
     //@return hex string
-    public String encrypt(File f) throws IOException {
+    public byte[] encrypt(File f) throws IOException {
         RandomAccessFile raf = new RandomAccessFile(f, "r");
         byte[] b = new byte[(int) raf.length()];
         raf.read(b);
-        return toHex(cipher.encrypt(b));
+        return cipher.encrypt(b);
+    }
+
+    public byte[] decrypt(byte[] b) {
+        return cipher.decrypt(b);
     }
 
     public byte[] decrypt(String s, boolean isHex) {
@@ -54,17 +62,13 @@ public class CryptoWrapper {
         return toHex(cipher.getKey());
     }
 
-    private byte[] readBytesFromFile(File f) throws IOException {
-
-        BufferedReader in = new BufferedReader(
-                new InputStreamReader(
-                        new FileInputStream(f), "UTF8"));
-
-        StringBuilder sb = new StringBuilder();
-        String s;
-        while ((s = in.readLine()) != null) {
-            sb.append(s);
+    public byte[] readBytesFromFile(File f) throws IOException {
+        byte[] data = new byte[(int) f.length()];
+        try {
+            new FileInputStream(f).read(data);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-        return sb.toString().getBytes();
+        return data;
     }
 }

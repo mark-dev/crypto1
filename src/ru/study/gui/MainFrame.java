@@ -6,8 +6,7 @@ import ru.study.crypto.CryptoWrapper;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.awt.event.*;
 import java.io.*;
 import java.nio.charset.Charset;
 import java.util.Arrays;
@@ -17,8 +16,6 @@ import java.util.Arrays;
  * Created by Mark
  */
 public class MainFrame extends JFrame {
-    private boolean isDecryptWasLast = false;
-    private byte[] lastBytes;
 
     private MainFrame() {
         setTitle("comporator");
@@ -47,11 +44,6 @@ public class MainFrame extends JFrame {
         buttonRoll = new JButton("<- flip");
         buttonGetKey = new JButton("key?");
         buttonSaveResult = new JButton("save");
-        isInputHexCheckBox = new JCheckBox();
-        isOutputHexCheckBox = new JCheckBox();
-        isInputHexCheckBox.setText("hex");
-        isOutputHexCheckBox.setText("hex");
-        isOutputHexCheckBox.setSelected(true);
         fieldInput = new JTextArea("");
         fieldResult = new JTextArea("");
         fieldResult.setEditable(false);
@@ -63,8 +55,12 @@ public class MainFrame extends JFrame {
         utilsVerticalPanel.setBackground(lightBlue);
         panelBottom.setBackground(lightBlue);
         //preffered size
-        fieldInput.setPreferredSize(new Dimension(120, 40));
-        fieldResult.setPreferredSize(new Dimension(120, 40));
+        fieldInput.setPreferredSize(new Dimension(250, 100));
+        fieldResult.setPreferredSize(new Dimension(250, 100));
+        fieldInput.setLineWrap(true);
+        fieldInput.setWrapStyleWord(true);
+        fieldResult.setLineWrap(true);
+        fieldResult.setWrapStyleWord(true);
         //layouts
         setLayout(new BorderLayout());
         buttonsVerticalPanel.setLayout(new GridLayout(3, 1));
@@ -104,16 +100,10 @@ public class MainFrame extends JFrame {
 
             }
         });
-        isInputHexCheckBox.addActionListener(new ActionListener() {
+        fieldInput.addKeyListener(new KeyAdapter() {
             @Override
-            public void actionPerformed(ActionEvent e) {
-                formatInput(isInputHexCheckBox.isSelected());
-            }
-        });
-        isOutputHexCheckBox.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                formatResult(isOutputHexCheckBox.isSelected());
+            public void keyTyped(KeyEvent e) {
+                lastAction = LastAction.INPUT_EDITED;
             }
         });
         // add components to panels
@@ -122,14 +112,17 @@ public class MainFrame extends JFrame {
         buttonsVerticalPanel.add(buttonDecrypt);
         buttonsVerticalPanel.add(buttonFromFile);
         panelMain.add(buttonsVerticalPanel);
-        utilsVerticalPanel.add(isInputHexCheckBox);
         utilsVerticalPanel.add(buttonRoll);
         utilsVerticalPanel.add(buttonGetKey);
         panelMain.add(utilsVerticalPanel);
-        panelMain.add(fieldInput);
-        panelMain.add(fieldInput);
-        panelMain.add(fieldResult);
-        panelMain.add(isOutputHexCheckBox);
+        panelMain.add(new JScrollPane(fieldInput) {{
+            setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+            setVerticalScrollBarPolicy(VERTICAL_SCROLLBAR_ALWAYS);
+        }});
+        panelMain.add(new JScrollPane(fieldResult) {{
+            setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+            setVerticalScrollBarPolicy(VERTICAL_SCROLLBAR_AS_NEEDED);
+        }});
         panelMain.add(buttonSaveResult);
 
         //add panels to frame
@@ -139,11 +132,13 @@ public class MainFrame extends JFrame {
         pack();
     }
 
-    private void formatInput(boolean isHex) {
-        if (!isHex) {
-            fieldInput.setText(new String(cryptoWrapper.toBytes(fieldInput.getText())));
-        } else {
-            fieldInput.setText(cryptoWrapper.toHex(fieldInput.getText().getBytes()));
+    private void formatInput() {
+        switch (lastAction) {
+            case FILE_SELECTED: {
+                fieldInput.setText("<file " + openedFile.getName() + ">");
+                break;
+            }
+
         }
     }
 
@@ -153,35 +148,30 @@ public class MainFrame extends JFrame {
     }
 
     private void buttonRollActionPefrormed() {
-        boolean isInputwasHex = isInputHexCheckBox.isSelected();
-        boolean isOutputwasHex = isOutputHexCheckBox.isSelected();
-        fieldInput.setText(fieldResult.getText());
-        isInputHexCheckBox.setSelected(isOutputwasHex);
-        isOutputHexCheckBox.setSelected(isInputwasHex);
-        fieldResult.setText("");
+        if (fieldInput.getText().startsWith("<file")) {
+            lastAction = LastAction.FLIP_FILE;
+        } else {
+            lastAction = LastAction.FLIP_TEXT;
+        }
+        String tmp = fieldResult.getText();
+        byte[] tmp2 = output.clone();
+        fieldResult.setText(fieldInput.getText());
+        fieldInput.setText(tmp);
+        output = input.clone();
+        input = tmp2;
+
         if (!fieldInput.getText().isEmpty()) {
             buttonDecryptActionPerformed();
         }
     }
 
-    private void formatResult(boolean isHex) {
-        try {
-            if (!isHex) {
-                fieldResult.setText(new String(cryptoWrapper.toBytes(fieldResult.getText()), "UTF-8"));
-            } else {
-                fieldResult.setText(cryptoWrapper.toHex(fieldResult.getText().getBytes("UTF-8")));
-            }
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-        }
-    }
 
     private void buttonSaveResultActionPerformed() {
         JFileChooser chooser = new JFileChooser();
         int retrival = chooser.showSaveDialog(null);
         if (retrival == JFileChooser.APPROVE_OPTION) {
             try {
-                byte[] bytes = lastBytes;
+                byte[] bytes = output;
                 System.out.println("Bytes for writing: " + Arrays.toString(bytes));
                 BufferedOutputStream bos;
                 FileOutputStream fos = new FileOutputStream(chooser.getSelectedFile());
@@ -202,54 +192,69 @@ public class MainFrame extends JFrame {
         if (ret == JFileChooser.APPROVE_OPTION) {
             File file = fileopen.getSelectedFile();
             openedFile = file;
-            fieldInput.setText("<file: " + file.getName() + " >");
+            lastAction = LastAction.FILE_SELECTED;
+            formatInput();
         }
     }
 
 
     private void buttonDecryptActionPerformed() {
-        isDecryptWasLast = true;
-        String result = "";
-        if (isFileSelected()) {
+        if (lastAction == LastAction.FILE_SELECTED ||
+                lastAction == LastAction.FLIP_FILE) {
             try {
-                //Работает только с обычным текстом, надо с хексом - вместо false inputIsHexCheckBox.isSelected()
-                lastBytes = cryptoWrapper.decrypt(openedFile, true);
-                result = cryptoWrapper.toHex(lastBytes);
-            } catch (IOException e) {
-                e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-            }
-        } else {
-            lastBytes = cryptoWrapper.decrypt(fieldInput.getText(), isInputHexCheckBox.isSelected());
-            result = cryptoWrapper.toHex(lastBytes);
-        }
-
-        formatResult(result);
-    }
-
-    //result - hex строка
-    private void formatResult(String result) {
-        if (isOutputHexCheckBox.isSelected()) {
-            fieldResult.setText(result);
-        } else {
-            fieldResult.setText(new String(cryptoWrapper.toBytes(result)));
-        }
-    }
-
-    private void buttonEncryptActionPefrormed() {
-        isDecryptWasLast = false;
-        String result = "";
-        if (isFileSelected()) {
-            try {
-                result = cryptoWrapper.encrypt(openedFile);  //hex
-                lastBytes = cryptoWrapper.toBytes(result);
+                output = cryptoWrapper.decrypt(openedFile, false);
+                lastAction = LastAction.FILE_DECRYPT;
             } catch (IOException e) {
                 e.printStackTrace();
             }
         } else {
-            lastBytes = cryptoWrapper.encrypt(fieldInput.getText(), isInputHexCheckBox.isSelected());
-            result = cryptoWrapper.toHex(lastBytes);
+            output = cryptoWrapper.decrypt(input);
+            lastAction = LastAction.TEXT_DECRYPT;
+
         }
-        formatResult(result);
+        formatOutput();
+    }
+
+    private void formatOutput() {
+        switch (lastAction) {
+            case FILE_DECRYPT: {
+                fieldResult.setText("<decrypted " + openedFile.getName() + ">");
+                break;
+            }
+            case TEXT_DECRYPT: {
+                fieldResult.setText(new String(output));
+                break;
+            }
+            case TEXT_ENCRYPT: {
+                fieldResult.setText(cryptoWrapper.toHex(output));
+                break;
+            }
+            case FILE_ENCRYPT: {
+                fieldResult.setText("<encrypted " + openedFile.getName() + ">");
+                break;
+            }
+        }
+    }
+
+
+    private void buttonEncryptActionPefrormed() {
+        if (lastAction == LastAction.FILE_SELECTED) {
+            try {
+                input = cryptoWrapper.readBytesFromFile(openedFile);
+                output = cryptoWrapper.encrypt(input);
+                lastAction = LastAction.FILE_ENCRYPT;
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        } else {
+            if (lastAction == LastAction.INPUT_EDITED) {
+                input = fieldInput.getText().getBytes();
+            }
+            output = cryptoWrapper.encrypt(input);
+            lastAction = LastAction.TEXT_ENCRYPT;
+
+        }
+        formatOutput();
     }
 
     public static void main(String[] args) throws
@@ -266,6 +271,20 @@ public class MainFrame extends JFrame {
         }).start();
     }
 
+    enum LastAction {
+        TEXT_ENCRYPT,
+        FILE_ENCRYPT,
+        TEXT_DECRYPT,
+        FILE_DECRYPT,
+        FILE_SELECTED,
+        FLIP_FILE,
+        FLIP_TEXT,
+        INPUT_EDITED
+    }
+
+    private LastAction lastAction;
+    private byte[] input;
+    private byte[] output;
     private File openedFile;
     //-----------------------
     private JPanel panelMain;
@@ -274,19 +293,14 @@ public class MainFrame extends JFrame {
     private JPanel panelBottom;
 
     private JButton buttonEncrypt;
-    private JCheckBox isInputHexCheckBox;
     private JButton buttonDecrypt;
     private JButton buttonFromFile;
     private JButton buttonRoll;
     private JButton buttonSaveResult;
     private JButton buttonGetKey;
-    private JCheckBox isOutputHexCheckBox;
     private JTextArea fieldResult;
     private JTextArea fieldInput;
     private CryptoWrapper cryptoWrapper;
 
-    public boolean isFileSelected() {
-        return fieldInput.getText().startsWith("<file:");
-    }
 }
 
