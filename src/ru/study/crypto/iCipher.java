@@ -10,5 +10,5 @@ package ru.study.crypto;
 public interface iCipher {
     public byte[] encrypt(byte[] raw);
     public byte[] decrypt(byte[] crypted);
-    public byte[] getKey();
+    public String getKeyString();
 }

@@ -19,20 +19,7 @@ public class CryptoWrapper {
         this.cipher = cipher;
     }
 
-    //@return hex string
-    public byte[] encrypt(String s, boolean isHex) {
-        return cipher.encrypt(isHex ? toBytes(s) : s.getBytes());
-    }
-
     public byte[] encrypt(byte[] b) {
-        return cipher.encrypt(b);
-    }
-
-    //@return hex string
-    public byte[] encrypt(File f) throws IOException {
-        RandomAccessFile raf = new RandomAccessFile(f, "r");
-        byte[] b = new byte[(int) raf.length()];
-        raf.read(b);
         return cipher.encrypt(b);
     }
 
@@ -40,14 +27,11 @@ public class CryptoWrapper {
         return cipher.decrypt(b);
     }
 
-    public byte[] decrypt(String s, boolean isHex) {
-        return cipher.decrypt(isHex ? toBytes(s) : s.getBytes());
-    }
 
-    public byte[] decrypt(File f, boolean isHex) throws IOException {
+    public byte[] decrypt(File f) throws IOException {
         byte[] b = readBytesFromFile(f);
         System.out.println("Readed bytes: " + Arrays.toString(b));
-        return isHex ? cipher.decrypt(toBytes(new String(b))) : cipher.decrypt(b);
+        return cipher.decrypt(b);
     }
 
     public String toHex(byte[] array) {
@@ -59,7 +43,7 @@ public class CryptoWrapper {
     }
 
     public String getKey() {
-        return toHex(cipher.getKey());
+        return cipher.getKeyString();
     }
 
     public byte[] readBytesFromFile(File f) throws IOException {

@@ -1,5 +1,6 @@
 package ru.study.crypto;
 
+import javax.xml.bind.DatatypeConverter;
 import java.util.Arrays;
 import java.util.Random;
 
@@ -33,7 +34,7 @@ public class AESCipher implements iCipher {
     }
 
     @Override
-    public byte[] getKey() {
-        return key;
+    public String getKeyString() {
+        return "AES Key: "+DatatypeConverter.printHexBinary(key);
     }
 }

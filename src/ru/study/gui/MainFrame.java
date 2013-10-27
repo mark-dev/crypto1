@@ -8,7 +8,6 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
-import java.nio.charset.Charset;
 import java.util.Arrays;
 
 
@@ -18,7 +17,7 @@ import java.util.Arrays;
 public class MainFrame extends JFrame {
 
     private MainFrame() {
-        setTitle("comporator");
+        setTitle("crypto1");
         initGUI();
         initCryptoWrapper();
     }
@@ -76,7 +75,7 @@ public class MainFrame extends JFrame {
         buttonRoll.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                buttonRollActionPefrormed();
+                buttonRollActionPerformed();
             }
         });
         buttonDecrypt.addActionListener(new ActionListener() {
@@ -143,11 +142,11 @@ public class MainFrame extends JFrame {
     }
 
     private void buttonGetKeyActionPefrormed() {
-        JOptionPane.showMessageDialog(this, "Key: " + cryptoWrapper.getKey());
+        new KeyDialog(this, cryptoWrapper.getKey());
         repaint();
     }
 
-    private void buttonRollActionPefrormed() {
+    private void buttonRollActionPerformed() {
         if (fieldInput.getText().startsWith("<file")) {
             lastAction = LastAction.FLIP_FILE;
         } else {
@@ -180,7 +179,7 @@ public class MainFrame extends JFrame {
                 bos.flush();
                 bos.close();
             } catch (Exception ex) {
-                ex.printStackTrace();
+                JOptionPane.showMessageDialog(this, ex.getMessage());
             }
         }
     }
@@ -199,20 +198,21 @@ public class MainFrame extends JFrame {
 
 
     private void buttonDecryptActionPerformed() {
-        if (lastAction == LastAction.FILE_SELECTED ||
-                lastAction == LastAction.FLIP_FILE) {
-            try {
-                output = cryptoWrapper.decrypt(openedFile, false);
+        try {
+            if (lastAction == LastAction.FILE_SELECTED ||
+                    lastAction == LastAction.FLIP_FILE) {
+                output = cryptoWrapper.decrypt(openedFile);
                 lastAction = LastAction.FILE_DECRYPT;
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        } else {
-            output = cryptoWrapper.decrypt(input);
-            lastAction = LastAction.TEXT_DECRYPT;
 
+            } else {
+                output = cryptoWrapper.decrypt(input);
+                lastAction = LastAction.TEXT_DECRYPT;
+
+            }
+            formatOutput();
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, e.getStackTrace());
         }
-        formatOutput();
     }
 
     private void formatOutput() {
@@ -238,23 +238,23 @@ public class MainFrame extends JFrame {
 
 
     private void buttonEncryptActionPefrormed() {
-        if (lastAction == LastAction.FILE_SELECTED) {
-            try {
+        try {
+            if (lastAction == LastAction.FILE_SELECTED) {
                 input = cryptoWrapper.readBytesFromFile(openedFile);
                 output = cryptoWrapper.encrypt(input);
                 lastAction = LastAction.FILE_ENCRYPT;
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        } else {
-            if (lastAction == LastAction.INPUT_EDITED) {
-                input = fieldInput.getText().getBytes();
-            }
-            output = cryptoWrapper.encrypt(input);
-            lastAction = LastAction.TEXT_ENCRYPT;
+            } else {
+                if (lastAction == LastAction.INPUT_EDITED) {
+                    input = fieldInput.getText().getBytes();
+                }
+                output = cryptoWrapper.encrypt(input);
+                lastAction = LastAction.TEXT_ENCRYPT;
 
+            }
+            formatOutput();
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, e.getStackTrace());
         }
-        formatOutput();
     }
 
     public static void main(String[] args) throws
