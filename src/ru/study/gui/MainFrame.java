@@ -142,8 +142,13 @@ public class MainFrame extends JFrame {
     }
 
     private void buttonGetKeyActionPefrormed() {
-        new KeyDialog(this, cryptoWrapper.getKey());
-        repaint();
+        final JFrame f = this;
+        SwingUtilities.invokeLater(new Runnable() {
+            public void run() {
+                new KeyDialog(f, cryptoWrapper.getKey()).setVisible(true);
+            }
+        });
+
     }
 
     private void buttonRollActionPerformed() {
