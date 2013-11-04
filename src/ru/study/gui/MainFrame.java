@@ -153,12 +153,9 @@ public class MainFrame extends JFrame {
             lastAction = LastAction.FLIP_TEXT;
         }
         String tmp = fieldResult.getText();
-        byte[] tmp2 = output.clone();
-        fieldResult.setText(fieldInput.getText());
         fieldInput.setText(tmp);
-        output = input.clone();
-        input = tmp2;
-
+        input = output.clone();
+        output = null;
         if (!fieldInput.getText().isEmpty()) {
             buttonDecryptActionPerformed();
         }
@@ -199,15 +196,16 @@ public class MainFrame extends JFrame {
 
     private void buttonDecryptActionPerformed() {
         try {
-            if (lastAction == LastAction.FILE_SELECTED ||
-                    lastAction == LastAction.FLIP_FILE) {
+            if (lastAction == LastAction.FILE_SELECTED) {
                 output = cryptoWrapper.decrypt(openedFile);
                 lastAction = LastAction.FILE_DECRYPT;
 
+            } else if (lastAction == LastAction.FLIP_FILE) {
+                output = cryptoWrapper.decrypt(input);
+                lastAction = LastAction.FILE_DECRYPT;
             } else {
                 output = cryptoWrapper.decrypt(input);
                 lastAction = LastAction.TEXT_DECRYPT;
-
             }
             formatOutput();
         } catch (Exception e) {

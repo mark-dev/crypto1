@@ -19,18 +19,34 @@ public class CryptoWrapper {
         this.cipher = cipher;
     }
 
-    public byte[] encrypt(byte[] b) {
-        return cipher.encrypt(b);
+    public byte[] encrypt(byte[] b) throws Exception
+    {
+        byte[] res = cipher.encrypt(b);
+        if (res.length > 30 || b.length > 30) {
+            System.out.println(String.format("encrypt(%s ...(%d) ) -> %s ... [%d]",
+                    Arrays.toString(Arrays.copyOfRange(b, 1, 10)),b.length,
+                    Arrays.toString(Arrays.copyOfRange(res, 1, 10)),res.length));
+        } else {
+            System.out.println(String.format("encrypt(%s) -> %s", Arrays.toString(b), Arrays.toString(res)));
+        }
+        return res;
     }
 
     public byte[] decrypt(byte[] b) {
-        return cipher.decrypt(b);
+        byte[] res = cipher.decrypt(b);
+        if (res.length > 30 || b.length > 30) {
+            System.out.println(String.format("decrypt(%s ...(%d) ) -> %s ... [%d]",
+                    Arrays.toString(Arrays.copyOfRange(b, 1, 10)),b.length,
+                    Arrays.toString(Arrays.copyOfRange(res, 1, 10)),res.length));
+        } else {
+            System.out.println(String.format("decrypt(%s) -> %s", Arrays.toString(b), Arrays.toString(res)));
+        }
+        return res;
     }
 
 
     public byte[] decrypt(File f) throws IOException {
         byte[] b = readBytesFromFile(f);
-        System.out.println("Readed bytes: " + Arrays.toString(b));
         return cipher.decrypt(b);
     }
 

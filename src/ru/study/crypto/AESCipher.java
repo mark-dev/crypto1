@@ -21,20 +21,16 @@ public class AESCipher implements iCipher {
 
     @Override
     public byte[] encrypt(byte[] raw) {
-        byte[] res = AES.encrypt(raw, key);
-        System.out.println("encrypt("+Arrays.toString(raw) + ") -> " + Arrays.toString(res));
-        return res;
+        return AES.encrypt(raw, key);
     }
 
     @Override
     public byte[] decrypt(byte[] crypted) {
-        byte[] dec = AES.decrypt(crypted, key);
-        System.out.println("decrypt("+Arrays.toString(crypted) + ") -> " + Arrays.toString(dec));
-        return dec;
+        return AES.decrypt(crypted, key);
     }
 
     @Override
     public String getKeyString() {
-        return "AES Key: "+DatatypeConverter.printHexBinary(key);
+        return "AES Key: " + DatatypeConverter.printHexBinary(key);
     }
 }

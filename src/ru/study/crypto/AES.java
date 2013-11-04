@@ -12,7 +12,7 @@ public class AES {
     private static int Nb, Nk, Nr;
     private static byte[][] w;
 
-    private static int[] sbox = { 0x63, 0x7C, 0x77, 0x7B, 0xF2, 0x6B, 0x6F,
+    private static int[] SBOX = { 0x63, 0x7C, 0x77, 0x7B, 0xF2, 0x6B, 0x6F,
             0xC5, 0x30, 0x01, 0x67, 0x2B, 0xFE, 0xD7, 0xAB, 0x76, 0xCA, 0x82,
             0xC9, 0x7D, 0xFA, 0x59, 0x47, 0xF0, 0xAD, 0xD4, 0xA2, 0xAF, 0x9C,
             0xA4, 0x72, 0xC0, 0xB7, 0xFD, 0x93, 0x26, 0x36, 0x3F, 0xF7, 0xCC,
@@ -37,7 +37,7 @@ public class AES {
             0x28, 0xDF, 0x8C, 0xA1, 0x89, 0x0D, 0xBF, 0xE6, 0x42, 0x68, 0x41,
             0x99, 0x2D, 0x0F, 0xB0, 0x54, 0xBB, 0x16 };
 
-    private static int[] inv_sbox = { 0x52, 0x09, 0x6A, 0xD5, 0x30, 0x36, 0xA5,
+    private static int[] INV_SBOX = { 0x52, 0x09, 0x6A, 0xD5, 0x30, 0x36, 0xA5,
             0x38, 0xBF, 0x40, 0xA3, 0x9E, 0x81, 0xF3, 0xD7, 0xFB, 0x7C, 0xE3,
             0x39, 0x82, 0x9B, 0x2F, 0xFF, 0x87, 0x34, 0x8E, 0x43, 0x44, 0xC4,
             0xDE, 0xE9, 0xCB, 0x54, 0x7B, 0x94, 0x32, 0xA6, 0xC2, 0x23, 0x3D,
@@ -62,7 +62,7 @@ public class AES {
             0x99, 0x61, 0x17, 0x2B, 0x04, 0x7E, 0xBA, 0x77, 0xD6, 0x26, 0xE1,
             0x69, 0x14, 0x63, 0x55, 0x21, 0x0C, 0x7D };
 
-    private static int Rcon[] = { 0x8d, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36, 0x6c, 0xd8, 0xab, 0x4d, 0x9a,
+    private static int RCON[] = { 0x8d, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36, 0x6c, 0xd8, 0xab, 0x4d, 0x9a,
             0x2f, 0x5e, 0xbc, 0x63, 0xc6, 0x97, 0x35, 0x6a, 0xd4, 0xb3, 0x7d, 0xfa, 0xef, 0xc5, 0x91, 0x39,
             0x72, 0xe4, 0xd3, 0xbd, 0x61, 0xc2, 0x9f, 0x25, 0x4a, 0x94, 0x33, 0x66, 0xcc, 0x83, 0x1d, 0x3a,
             0x74, 0xe8, 0xcb, 0x8d, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36, 0x6c, 0xd8,
@@ -107,7 +107,7 @@ public class AES {
                 temp[k] = tmp[i-1][k];
             if (i % Nk == 0) {
                 temp = SubWord(rotateWord(temp));
-                temp[0] = (byte) (temp[0] ^ (Rcon[i / Nk] & 0xff));
+                temp[0] = (byte) (temp[0] ^ (RCON[i / Nk] & 0xff));
             } else if (Nk > 6 && i % Nk == 4) {
                 temp = SubWord(temp);
             }
@@ -118,15 +118,17 @@ public class AES {
         return tmp;
     }
 
+    //Применяет SBOX к какждому из байтов
     private static byte[] SubWord(byte[] in) {
         byte[] tmp = new byte[in.length];
 
         for (int i = 0; i < tmp.length; i++)
-            tmp[i] = (byte) (sbox[in[i] & 0x000000ff] & 0xff);
+            tmp[i] = (byte) (SBOX[in[i] & 0x000000ff] & 0xff);
 
         return tmp;
     }
 
+    /*Переворачивает список байт*/
     private static byte[] rotateWord(byte[] input) {
         byte[] tmp = new byte[input.length];
         tmp[0] = input[1];
@@ -137,6 +139,7 @@ public class AES {
         return tmp;
     }
 
+    /*трансформация при шифровании и обратном шифровании, при которой Round Key XOR’ится c State*/
     private static byte[][] AddRoundKey(byte[][] state, byte[][] w, int round) {
 
         byte[][] tmp = new byte[state.length][state[0].length];
@@ -149,23 +152,28 @@ public class AES {
         return tmp;
     }
 
+    //Использует SBOX для обработки state
     private static byte[][] SubBytes(byte[][] state) {
 
         byte[][] tmp = new byte[state.length][state[0].length];
         for (int row = 0; row < 4; row++)
             for (int col = 0; col < Nb; col++)
-                tmp[row][col] = (byte) (sbox[(state[row][col] & 0x000000ff)] & 0xff);
+                tmp[row][col] = (byte) (SBOX[(state[row][col] & 0x000000ff)] & 0xff);
 
         return tmp;
     }
+
+    //Обратная к SubBytes
     private static byte[][] InvSubBytes(byte[][] state) {
         for (int row = 0; row < 4; row++)
             for (int col = 0; col < Nb; col++)
-                state[row][col] = (byte)(inv_sbox[(state[row][col] & 0x000000ff)]&0xff);
+                state[row][col] = (byte)(INV_SBOX[(state[row][col] & 0x000000ff)]&0xff);
 
         return state;
     }
 
+    //Сдвигает байты в каждой строке state влево.
+    //Размер смещения зависимосит от номера строки
     private static byte[][] ShiftRows(byte[][] state) {
 
         byte[] t = new byte[4];
@@ -179,6 +187,7 @@ public class AES {
         return state;
     }
 
+    //обратное по отношению к ShiftRows-у
     private static byte[][] InvShiftRows(byte[][] state) {
         byte[] t = new byte[4];
         for (int r = 1; r < 4; r++) {
@@ -190,6 +199,7 @@ public class AES {
         return state;
     }
 
+    //обратное MixColumns-у
     private static byte[][] InvMixColumns(byte[][] s){
         int[] sp = new int[4];
         byte b02 = (byte)0x0e, b03 = (byte)0x0b, b04 = (byte)0x0d, b05 = (byte)0x09;
@@ -204,6 +214,7 @@ public class AES {
         return s;
     }
 
+    // берет все столбцы State и смешивает их данные
     private static byte[][] MixColumns(byte[][] s){
         int[] sp = new int[4];
         byte b02 = (byte)0x02, b03 = (byte)0x03;
@@ -218,6 +229,7 @@ public class AES {
         return s;
     }
 
+    //Для умножения полиномов
     public static byte FFMul(byte a, byte b) {
         byte aa = a, bb = b, r = 0, t;
         while (aa != 0) {
@@ -232,6 +244,7 @@ public class AES {
         return r;
     }
 
+ //encrypt-decrypt для блока длиной 16 байт
     public static byte[] encryptBloc(byte[] in) {
         byte[] tmp = new byte[in.length];
 
@@ -359,6 +372,8 @@ public class AES {
         return tmp;
     }
 
+
+    //удаляет выравнивание
     private static byte[] deletePadding(byte[] input) {
         int count = 0;
 
